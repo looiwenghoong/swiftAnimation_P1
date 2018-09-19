@@ -29,9 +29,30 @@ class ViewController: UIViewController {
         displayLink.add(to: .main, forMode: .default)
     }
     
+    
+    var startValue: Double = 0
+    var endValue:Double = 12030
+    
+    let timeDuration: Double = 1.5
+    
+    let animationStartTime = Date()
+    
     @objc func updateLabel()
     {
-        print(Date())
+        let now = Date()
+        let elapsedTime = now.timeIntervalSince(animationStartTime)
+        
+        if elapsedTime > timeDuration
+        {
+            self.countingLabel.text = "\(endValue)"
+        }
+        else
+        {
+            let percentage = elapsedTime / timeDuration
+            let value = startValue + percentage * (endValue - startValue)
+            
+            self.countingLabel.text = "\(value)"
+        }
     }
 }
 
