@@ -10,58 +10,88 @@
 import UIKit
 
 class nextViewController: UIViewController, URLSessionDownloadDelegate {
-
+    
     //  Create the calayer shapeobject
-    let shapelayer = CAShapeLayer()
+    var shapelayer: CAShapeLayer!
+    
+    var pulsingLayer: CAShapeLayer!
     
     let percentageLabel: UILabel = {
         let label = UILabel()
         label.text = "Start"
         label.textAlignment = .center
         label.font = UIFont.boldSystemFont(ofSize: 32)
+        label.textColor = .white
         return label
     }()
+    
+    private func setupNotificationObserver()
+    {
+        NotificationCenter.default.addObserver(self, selector: #selector(handleEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
+    }
+    
+    @objc private func handleEnterForeground()
+    {
+        animatePulsatingLayer()
+    }
+    
+    private func createCircle(strokeColor: UIColor, fillColor: UIColor) -> (CAShapeLayer)
+    {
+        let layer = CAShapeLayer()
+        
+        //  the path and the specifications of drawing out the shape
+        let circularPath = UIBezierPath(arcCenter: .zero, radius: 100, startAngle: 0, endAngle: 2 * CGFloat.pi, clockwise: true)
+        layer.path = circularPath.cgPath
+        layer.strokeColor = strokeColor.cgColor
+        layer.lineWidth = 10
+        layer.fillColor = fillColor.cgColor
+        layer.position = view.center
+        
+        return layer
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
+
+        setupNotificationObserver()
         
-        view.addSubview(percentageLabel)
-        percentageLabel.frame = CGRect(x: 0, y: 0, width: 100, height: 100)
-        percentageLabel.center = view.center
+        pulsingLayer = createCircle(strokeColor: .clear, fillColor: .blue)
+        view.layer.addSublayer(pulsingLayer)
         
-//        let center = view.center
-    
-        let hiddenLayer = CAShapeLayer() // Hidden layer of the shape
-        
-        //  the path and the specifications of drawing out the shape
-        let circularPath = UIBezierPath(arcCenter: .zero, radius: 100, startAngle: 0, endAngle: 2 * CGFloat.pi, clockwise: true)
+        animatePulsatingLayer()
         
         // Customization for the hidden layer of the arc
-        hiddenLayer.path = circularPath.cgPath
-        hiddenLayer.strokeColor = UIColor.lightGray.cgColor
-        hiddenLayer.lineWidth = 10
-        hiddenLayer.fillColor = UIColor.clear.cgColor
-        hiddenLayer.position = view.center
+        let hiddenLayer = createCircle(strokeColor: .lightGray, fillColor: .clear) // Hidden layer of the shape
         view.layer.addSublayer(hiddenLayer)
-        
+    
         // Customization for the outer layer of the arc
-        shapelayer.path = circularPath.cgPath
-        shapelayer.strokeColor = UIColor.red.cgColor
-        shapelayer.lineWidth = 10
-        shapelayer.lineCap = .round
-        shapelayer.strokeEnd = 0
-        shapelayer.fillColor = UIColor.clear.cgColor
-        shapelayer.position = view.center
-        
+        shapelayer = createCircle(strokeColor: .red, fillColor: .clear)
         shapelayer.transform = CATransform3DMakeRotation(-CGFloat.pi / 2, 0, 0, 1)
         view.layer.addSublayer(shapelayer)
         
         // add gesture recogizer to the view so that upon tapping the screen, some kind of action can be added into the view
         view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
+        
+        view.addSubview(percentageLabel)
+        percentageLabel.frame = CGRect(x: 0, y: 0, width: 100, height: 100)
+        percentageLabel.center = view.center
     }
     
-    //  1. Define the url string to obtain the downlaod file
+    // function to create animation and bind the animation to the shape
+    private func animatePulsatingLayer()
+    {
+        let animation = CABasicAnimation(keyPath: "transform.scale")
+        
+        animation.toValue = 1.3
+        animation.duration = 1
+        animation.timingFunction = CAMediaTimingFunction(name: .easeOut)
+        animation.autoreverses = true
+        animation.repeatCount = Float.infinity
+        pulsingLayer.add(animation, forKey: "pulsating")
+    }
+    
+    //  1. Define the url string to obtain the download file
     let urlString = "https://firebasestorage.googleapis.com/v0/b/firestorechat-e64ac.appspot.com/o/intermediate_training_rec.mp4?alt=media&token=e20261d0-7219-49d2-b32d-367e1606500c"
     
     private func downloadTask()
@@ -69,7 +99,7 @@ class nextViewController: UIViewController, URLSessionDownloadDelegate {
         print("Attempting to download file")
         
         shapelayer.strokeEnd = 0
-
+        
         let configuration = URLSessionConfiguration.default
         let delagateQueue = OperationQueue()
         // 2. Establish a urlsession and configure to the download protocol
